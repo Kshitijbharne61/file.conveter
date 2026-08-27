@@ -1,125 +1,82 @@
-let currentCategory = 'all';
-
-function filterByCategory(cat) {
-    currentCategory = cat;
-    document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.cat === cat);
-    });
-    const cards = document.querySelectorAll('#tools-container .tool-card');
-    cards.forEach(card => {
-        const matchesCategory = currentCategory === 'all' || card.dataset.cat === currentCategory;
-        card.style.display = matchesCategory ? '' : 'none';
-    });
-}
-
-function openToolModal(toolName, type) {
-    document.getElementById('modal-title').innerText = toolName;
-    document.getElementById('tool-modal').classList.remove('hidden');
-    document.getElementById('modal-config').classList.add('hidden');
-    document.getElementById('modal-success').classList.add('hidden');
-    document.getElementById('modal-progress-wrap').classList.add('hidden');
-    document.getElementById('modal-upload-prompt').classList.remove('hidden');
-    document.getElementById('modal-file-info').classList.add('hidden');
-}
-
-function closeToolModal() {
-    document.getElementById('tool-modal').classList.add('hidden');
-}
-
-// Firebase Auth Handlers
-function openLoginModal() {
-    document.getElementById('login-modal').classList.remove('hidden');
-}
-
-function closeLoginModal() {
-    document.getElementById('login-modal').classList.add('hidden');
-}
-
-function loginWithGoogle() {
-    if (!window.firebaseAuth) return;
-    const { auth, signInWithPopup, GoogleAuthProvider } = window.firebaseAuth;
-    const provider = new GoogleAuthProvider();
-
-    signInWithPopup(auth, provider)
-        .then(() => {
-            closeLoginModal();
-        })
-        .catch((error) => {
-            console.error("Login Error:", error);
-            alert("Login failed. Please try again.");
-        });
-}
-
-function handleLogout() {
-    if (!window.firebaseAuth) return;
-    const { auth, signOut } = window.firebaseAuth;
-    signOut(auth).catch((error) => {
-        console.error("Logout Error:", error);
-    });
-}
-
-// Track User Auth State
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-        if (window.firebaseAuth) {
-            const { auth, onAuthStateChanged } = window.firebaseAuth;
-            onAuthStateChanged(auth, (user) => {
-                const loggedOutDiv = document.getElementById('auth-logged-out');
-                const loggedInDiv = document.getElementById('auth-logged-in');
-                const nameSpan = document.getElementById('user-display-name');
+    // Select elements (make sure these IDs match your index.html)
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const compressBtn = document.getElementById("compress-btn");
+    const qualitySlider = document.getElementById("quality-slider"); // optional range input (0 to 1)
+    const downloadSection = document.getElementById("download-section");
 
-                if (user) {
-                    loggedOutDiv.classList.add('hidden');
-                    loggedInDiv.classList.remove('hidden');
-                    nameSpan.innerText = user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : 'Hi, User';
-                } else {
-                    loggedOutDiv.classList.remove('hidden');
-                    loggedInDiv.classList.add('hidden');
-                }
-            });
-        }
-    }, 500);
+    let selectedFile = null;
 
-    // Drop zone setup
-    const dropZone = document.getElementById('modal-drop-zone');
-    if (dropZone) {
-        dropZone.addEventListener('click', () => {
-            document.getElementById('modalFileUpload').click();
+    // Handle file selection via input
+    if (fileInput) {
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                selectedFile = e.target.files[0];
+                console.log("File selected:", selectedFile.name);
+            }
         });
+    }
+
+    // Handle Compress Image Click Option
+    if (compressBtn) {
+        compressBtn.addEventListener("click", () => {
+            if (!selectedFile) {
+                alert("Please select or upload an image file first!");
+                return;
+            }
+
+            if (!selectedFile.type.startsWith("image/")) {
+                alert("The selected file is not a valid image.");
+                return;
+            }
+
+            // Get quality value from slider or default to 0.7 (70%)
+            const quality = qualitySlider ? parseFloat(qualitySlider.value) : 0.7;
+
+            compressImage(selectedFile, quality, (compressedBlob, compressedUrl) => {
+                // Trigger download or display result
+                triggerDownload(compressedUrl, `compressed-${selectedFile.name}`);
+            });
+        });
+    }
+
+    // Core Compression Function using HTML5 Canvas
+    function compressImage(file, quality, callback) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+
+                // Convert to Blob with specified quality
+                canvas.toBlob(
+                    (blob) => {
+                        const url = URL.createObjectURL(blob);
+                        callback(blob, url);
+                    },
+                    file.type,
+                    quality
+                );
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Helper to trigger file download automatically
+    function triggerDownload(url, filename) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log("Compression complete. Download started.");
     }
 });
-
-function handleModalFileSelect(e) {
-    if (e.target.files && e.target.files[0]) {
-        loadFile(e.target.files[0]);
-    }
-}
-
-function loadFile(file) {
-    document.getElementById('modal-upload-prompt').classList.add('hidden');
-    document.getElementById('modal-file-info').classList.remove('hidden');
-    document.getElementById('modal-file-name').innerText = file.name;
-    document.getElementById('modal-file-size').innerText = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
-    document.getElementById('modal-config').classList.remove('hidden');
-}
-
-function processFileAction() {
-    let btn = document.getElementById('modal-process-btn');
-    btn.disabled = true;
-    document.getElementById('modal-progress-wrap').classList.remove('hidden');
-    const bar = document.getElementById('modal-progress-bar');
-    let pct = 0;
-
-    const interval = setInterval(() => {
-        pct += 10;
-        bar.style.width = Math.min(pct, 100) + '%';
-        if (pct >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-                btn.disabled = false;
-                document.getElementById('modal-config').classList.add('hidden');
-                document.getElementById('modal-success').classList.remove('hidden');
-            }, 300);
-        }
-    }, 50);
-}
