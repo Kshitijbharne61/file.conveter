@@ -1,57 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fileConvert - Online tools for file lovers</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="tailwind-config.js"></script>
-    <link rel="stylesheet" href="style.css">
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-        const firebaseConfig = {
-            apiKey: "AIzaSyDXkSwdbIkNmYuZ0nbylXP0layQSMa-hfI",
-            authDomain: "fileconverter-deede.firebaseapp.com",
-            projectId: "fileconverter-deede",
-            storageBucket: "fileconverter-deede.firebasestorage.app",
-            messagingSenderId: "301812638354",
-            appId: "1:301812638354:web:eebb9b2a69bc21f027fc4b",
-            measurementId: "G-V7P46E0L4V"
-        };
-        const app = initializeApp(firebaseConfig);
-        getAnalytics(app);
-        const auth = getAuth(app);
-        window.firebaseAuth = { auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged };
-    </script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fileConvert - Online file tools</title>
+<script src="https://cdn.tailwindcss.com"></script><script src="tailwind-config.js"></script><link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {getAuth,signInWithPopup,GoogleAuthProvider,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const app=initializeApp({apiKey:"AIzaSyDXkSwdbIkNmYuZ0nbylXP0layQSMa-hfI",authDomain:"fileconverter-deede.firebaseapp.com",projectId:"fileconverter-deede",storageBucket:"fileconverter-deede.firebasestorage.app",messagingSenderId:"301812638354",appId:"1:301812638354:web:eebb9b2a69bc21f027fc4b"});
+window.firebaseAuth={auth:getAuth(app),signInWithPopup,GoogleAuthProvider,signOut,onAuthStateChanged};
+</script>
 </head>
-<body class="bg-white text-slate-800 min-h-screen flex flex-col font-sans text-lg">
-    <header class="bg-white border-b border-slate-100 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-28 flex items-center justify-between">
-            <div class="flex items-center space-x-12">
-                <a href="#" class="flex items-center space-x-3 font-black text-4xl tracking-tighter text-slate-900"><span class="bg-red-600 text-white p-3 rounded-2xl text-2xl">⚡</span><span>file<span class="text-red-600">Convert</span></span></a>
-                <nav class="hidden md:flex space-x-8 text-base font-extrabold text-slate-800 tracking-wider">
-                    <a href="#" onclick="filterByCategory('merge'); return false;">MERGE PDF</a>
-                    <a href="#" onclick="filterByCategory('compress'); return false;">COMPRESS PDF</a>
-                    <a href="#" onclick="filterByCategory('convert'); return false;">CONVERT PDF</a>
-                    <a href="#tools-container">ALL PDF TOOLS</a>
-                </nav>
-            </div>
-            <div class="flex items-center space-x-6">
-                <div id="auth-logged-out" class="flex items-center space-x-6"><button onclick="openLoginModal()" class="font-extrabold">Login</button><button onclick="openLoginModal()" class="font-extrabold bg-red-600 text-white px-7 py-3.5 rounded-xl">Sign up</button></div>
-                <div id="auth-logged-in" class="hidden flex items-center space-x-4"><span id="user-display-name" class="font-bold"></span><button onclick="handleLogout()" class="font-extrabold bg-slate-200 px-5 py-2.5 rounded-xl">Logout</button></div>
-            </div>
-        </div>
-    </header>
-    <section class="bg-white py-20 px-6 text-center"><div class="max-w-5xl mx-auto"><h1 class="text-5xl sm:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-tight">Every tool you need to work with PDFs in one place</h1><p class="text-slate-600 text-xl sm:text-2xl max-w-3xl mx-auto leading-relaxed font-medium mb-12">Merge, split, compress, convert, rotate, unlock and watermark PDFs with just a few clicks. No installs, no learning curve.</p><div class="flex flex-wrap justify-center gap-x-10 gap-y-4 text-base font-bold text-slate-500"><span>🔒 Files processed in your browser</span><span>⏱️ Auto-deleted after 1 hour</span><span>🆓 No signup required</span><span>⭐ 4.8/5 from 12,000+ reviews</span></div></div></section>
-    <section class="max-w-7xl mx-auto px-6 mb-6"><h2 class="text-base font-black text-slate-400 tracking-widest uppercase mb-4">Most used today</h2><div class="grid grid-cols-2 sm:grid-cols-4 gap-5"><button onclick="openToolModal('Merge PDF','document')" class="bg-slate-900 text-white p-5 rounded-2xl text-left">📦 <b>Merge PDF</b></button><button onclick="openToolModal('Compress PDF','document')" class="bg-slate-900 text-white p-5 rounded-2xl text-left">🗜️ <b>Compress PDF</b></button><button onclick="openToolModal('PDF to Word','document')" class="bg-slate-900 text-white p-5 rounded-2xl text-left">📝 <b>PDF to Word</b></button><button onclick="openToolModal('Sign PDF','document')" class="bg-slate-900 text-white p-5 rounded-2xl text-left">✍️ <b>Sign PDF</b></button></div></section>
-    <section class="max-w-7xl mx-auto px-6 mt-8 mb-8"><div id="category-tabs" class="flex flex-wrap gap-4"><button data-cat="all" onclick="filterByCategory('all')" class="cat-btn active px-6 py-3 rounded-full font-extrabold border border-slate-200">All tools</button><button data-cat="organize" onclick="filterByCategory('organize')" class="cat-btn px-6 py-3 rounded-full font-extrabold border border-slate-200">Organize</button><button data-cat="convert" onclick="filterByCategory('convert')" class="cat-btn px-6 py-3 rounded-full font-extrabold border border-slate-200">Convert</button><button data-cat="edit" onclick="filterByCategory('edit')" class="cat-btn px-6 py-3 rounded-full font-extrabold border border-slate-200">Edit & sign</button><button data-cat="security" onclick="filterByCategory('security')" class="cat-btn px-6 py-3 rounded-full font-extrabold border border-slate-200">Security</button><button data-cat="ai" onclick="filterByCategory('ai')" class="cat-btn px-6 py-3 rounded-full font-extrabold border border-slate-200">AI tools</button></div></section>
-    <main class="flex-1 max-w-7xl w-full mx-auto px-6 pb-28"><div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"><div data-cat="organize" class="tool-card bg-white p-8 rounded-2xl border shadow-sm cursor-pointer" onclick="openToolModal('Merge PDF','document')"><div class="text-3xl mb-6">📦</div><h3 class="font-black text-2xl mb-3">Merge PDF</h3><p>Combine PDFs in the order you want with the easiest PDF merger available.</p></div><div data-cat="organize" class="tool-card bg-white p-8 rounded-2xl border shadow-sm cursor-pointer" onclick="openToolModal('Split PDF','document')"><div class="text-3xl mb-6">✂️</div><h3 class="font-black text-2xl mb-3">Split PDF</h3><p>Separate one page or a whole set into independent PDF files.</p></div><div data-cat="organize" class="tool-card bg-white p-8 rounded-2xl border shadow-sm cursor-pointer" onclick="openToolModal('Compress PDF','document')"><div class="text-3xl mb-6">🗜️</div><h3 class="font-black text-2xl mb-3">Compress PDF</h3><p>Reduce file size while optimizing for maximal PDF quality.</p></div><div data-cat="convert" class="tool-card bg-white p-8 rounded-2xl border shadow-sm cursor-pointer" onclick="openToolModal('PDF to Word','document')"><div class="text-3xl mb-6">📝</div><h3 class="font-black text-2xl mb-3">PDF to Word</h3><p>Convert your PDF files into easy-to-edit DOC and DOCX documents.</p></div></div></main>
-    <div id="login-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center p-6"><div class="bg-white rounded-3xl max-w-md w-full p-10 text-center"><button onclick="closeLoginModal()" class="float-right text-2xl">✕</button><h2 class="text-3xl font-black mb-2">Welcome to OmniConvert</h2><p class="text-slate-500 mb-8">Sign in to save your file history and settings.</p><button onclick="loginWithGoogle()" class="w-full border-2 border-slate-200 font-extrabold py-4 rounded-2xl">🌐 Continue with Google</button></div></div>
-    <div id="tool-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center p-6"><div class="bg-white rounded-3xl max-w-xl w-full p-10 relative"><button onclick="closeToolModal()" class="absolute right-6 top-6 text-2xl">✕</button><h2 id="modal-title" class="text-3xl font-black mb-2">Tool Name</h2><p class="text-slate-500 mb-8">🔒 Processed securely. Files auto-delete after 1 hour.</p><div id="modal-drop-zone" class="border-2 border-dashed border-red-300 bg-red-50/20 rounded-2xl p-12 text-center cursor-pointer"><input type="file" id="modalFileUpload" class="hidden" onchange="handleModalFileSelect(event)"><div id="modal-upload-prompt"><p class="text-xl font-bold">Drag & drop your file here, or <span class="text-red-600 underline">browse</span></p></div><div id="modal-file-info" class="hidden"><p id="modal-file-name" class="font-bold text-xl"></p><p id="modal-file-size" class="text-lg text-red-600 font-bold"></p></div></div><div id="modal-config" class="hidden mt-8"><button onclick="processFileAction()" id="modal-process-btn" class="w-full bg-red-600 text-white font-extrabold py-4 rounded-2xl text-xl">PROCESS & DOWNLOAD FILE</button><div id="modal-progress-wrap" class="hidden mt-4"><div class="w-full bg-slate-100 rounded-full h-4"><div id="modal-progress-bar" class="bg-red-600 h-4" style="width:0%"></div></div></div></div><div id="modal-success" class="hidden mt-8 text-center"><div class="text-5xl">✅</div><h3 class="text-2xl font-black">Done!</h3></div></div></div>
-    <script src="style.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+<body class="bg-white text-slate-800 min-h-screen flex flex-col">
+<header class="bg-white border-b sticky top-0 z-50"><div class="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between"><a href="#" class="font-black text-3xl">⚡ file<span class="text-red-600">Convert</span></a><nav class="hidden md:flex gap-7 font-bold text-sm"><a href="#tools-container">ALL TOOLS</a><a href="#" onclick="filterByCategory('convert');return false">CONVERT</a><a href="#" onclick="filterByCategory('ai');return false">AI TOOLS</a></nav><div><button id="auth-logged-out" onclick="openLoginModal()" class="bg-red-600 text-white px-5 py-2 rounded-xl font-bold">Login</button><div id="auth-logged-in" class="hidden items-center gap-3"><span id="user-display-name" class="font-bold"></span><button onclick="handleLogout()" class="bg-slate-200 px-4 py-2 rounded-xl font-bold">Logout</button></div></div></div></header>
+<section class="py-16 px-6 text-center"><h1 class="text-5xl sm:text-6xl font-black mb-5">Every file tool you need, in one place.</h1><p class="max-w-3xl mx-auto text-slate-600 text-xl">Convert, organize, edit and analyze your files directly in your browser.</p></section>
+<section class="max-w-7xl mx-auto px-6 mb-8"><div class="flex flex-wrap gap-3"><button data-cat="all" onclick="filterByCategory('all')" class="cat-btn active px-5 py-2 rounded-full border font-bold">All</button><button data-cat="organize" onclick="filterByCategory('organize')" class="cat-btn px-5 py-2 rounded-full border font-bold">Organize</button><button data-cat="convert" onclick="filterByCategory('convert')" class="cat-btn px-5 py-2 rounded-full border font-bold">Convert</button><button data-cat="edit" onclick="filterByCategory('edit')" class="cat-btn px-5 py-2 rounded-full border font-bold">Edit</button><button data-cat="image" onclick="filterByCategory('image')" class="cat-btn px-5 py-2 rounded-full border font-bold">Images</button><button data-cat="ai" onclick="filterByCategory('ai')" class="cat-btn px-5 py-2 rounded-full border font-bold">AI tools</button></div></section>
+<main id="tools-container" class="max-w-7xl mx-auto px-6 pb-24 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<div data-cat="organize" class="tool-card" onclick="openToolModal('Merge PDF')"><b>📦 Merge PDF</b><p>Combine multiple PDFs into one.</p></div>
+<div data-cat="organize" class="tool-card" onclick="openToolModal('Split PDF')"><b>✂️ Split PDF</b><p>Split every page into separate PDFs.</p></div>
+<div data-cat="organize" class="tool-card" onclick="openToolModal('Rotate PDF')"><b>🔄 Rotate PDF</b><p>Rotate all pages by 90 degrees.</p></div>
+<div data-cat="organize" class="tool-card" onclick="openToolModal('Compress PDF')"><b>🗜️ Compress PDF</b><p>Re-save PDFs with optimized object streams.</p></div>
+<div data-cat="convert" class="tool-card" onclick="openToolModal('PDF to Word')"><b>📝 PDF to Word</b><p>Extract PDF text into a Word-readable DOC.</p></div>
+<div data-cat="convert" class="tool-card" onclick="openToolModal('PDF to Text')"><b>📄 PDF to Text</b><p>Extract selectable text from a PDF.</p></div>
+<div data-cat="convert" class="tool-card" onclick="openToolModal('PDF to JPG')"><b>🖼️ PDF to JPG</b><p>Render PDF pages as JPG images.</p></div>
+<div data-cat="convert" class="tool-card" onclick="openToolModal('JPG to PDF')"><b>📑 JPG to PDF</b><p>Turn an image into a PDF.</p></div>
+<div data-cat="edit" class="tool-card" onclick="openToolModal('Watermark PDF')"><b>💧 Watermark PDF</b><p>Add a visible text watermark.</p></div>
+<div data-cat="edit" class="tool-card" onclick="openToolModal('Sign PDF')"><b>✍️ Sign PDF</b><p>Add a typed signature to the first page.</p></div>
+<div data-cat="image" class="tool-card" onclick="openToolModal('Image Compressor')"><b>🗜️ Image Compressor</b><p>Compress JPG, PNG and WebP images.</p></div>
+<div data-cat="ai" class="tool-card" onclick="openToolModal('AI Document Summary')"><b>✨ AI Document Summary</b><p>Extract PDF text and summarize it with Gemini.</p></div>
+</main>
+<div id="login-modal" class="fixed inset-0 bg-black/50 hidden z-50 items-center justify-center p-6"><div class="bg-white rounded-3xl max-w-md w-full p-8"><button onclick="closeLoginModal()" class="float-right text-2xl">✕</button><h2 class="text-2xl font-black mb-2">Sign in</h2><p class="text-slate-500 mb-6">Use Google to sign in.</p><button onclick="loginWithGoogle()" class="w-full border p-4 rounded-xl font-bold">🌐 Continue with Google</button></div></div>
+<div id="tool-modal" class="fixed inset-0 bg-black/60 hidden z-50 items-center justify-center p-4"><div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 relative"><button onclick="closeToolModal()" class="absolute right-5 top-5 text-2xl">✕</button><h2 id="modal-title" class="text-3xl font-black mb-2"></h2><p id="modal-description" class="text-slate-500 mb-6"></p><div id="modal-drop-zone" class="border-2 border-dashed border-red-300 rounded-2xl p-10 text-center cursor-pointer"><input id="modalFileUpload" type="file" class="hidden" onchange="handleModalFileSelect(event)"><p>Drop file(s) here or <span class="text-red-600 font-bold">browse</span></p><div id="modal-file-info" class="hidden mt-4 text-left"><div id="modal-file-name" class="font-bold"></div><div id="modal-file-size" class="text-red-600"></div></div></div><div id="modal-options" class="mt-5"></div><div id="modal-config" class="hidden mt-5"><button id="modal-process-btn" onclick="processFileAction()" class="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-black">PROCESS & DOWNLOAD</button></div><div id="modal-progress-wrap" class="hidden mt-4"><div class="h-3 bg-slate-100 rounded-full"><div id="modal-progress-bar" class="h-3 bg-red-600 rounded-full" style="width:0%"></div></div><p id="modal-status" class="text-center text-sm mt-2 text-slate-500"></p></div><div id="modal-success" class="hidden mt-5"></div></div></div>
+<script src="style.js"></script><script src="script.js"></script>
+</body></html>
