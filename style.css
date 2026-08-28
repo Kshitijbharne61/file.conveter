@@ -1,0 +1,12 @@
+/* File Converter - custom styles */
+
+/* Keep this file available for custom site-wide CSS.
+   Tailwind handles the majority of the current styling. */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+}
