@@ -1,143 +1,29 @@
-let currentCategory = 'all';
-let selectedModalFile = null;
-let currentToolName = '';
-
-function filterByCategory(cat) {
-    currentCategory = cat;
-    document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.cat === cat);
-    });
-    const cards = document.querySelectorAll('#tools-container .tool-card');
-    cards.forEach(card => {
-        const matchesCategory = currentCategory === 'all' || card.dataset.cat === currentCategory;
-        card.style.display = matchesCategory ? '' : 'none';
-    });
-}
-
-function openToolModal(toolName, type) {
-    currentToolName = toolName;
-    selectedModalFile = null;
-    document.getElementById('modal-title').innerText = toolName;
-    document.getElementById('tool-modal').classList.remove('hidden');
-    document.getElementById('modal-config').classList.add('hidden');
-    document.getElementById('modal-success').classList.add('hidden');
-    document.getElementById('modal-progress-wrap').classList.add('hidden');
-    document.getElementById('modal-upload-prompt').classList.remove('hidden');
-    document.getElementById('modal-file-info').classList.add('hidden');
-    document.getElementById('modal-progress-bar').style.width = '0%';
-    document.getElementById('modal-process-btn').disabled = false;
-    document.getElementById('modalFileUpload').value = '';
-}
-
-function closeToolModal() {
-    document.getElementById('tool-modal').classList.add('hidden');
-    selectedModalFile = null;
-}
-
-function openLoginModal() {
-    document.getElementById('login-modal').classList.remove('hidden');
-}
-
-function closeLoginModal() {
-    document.getElementById('login-modal').classList.add('hidden');
-}
-
-function loginWithGoogle() {
-    if (!window.firebaseAuth) return;
-    const { auth, signInWithPopup, GoogleAuthProvider } = window.firebaseAuth;
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).then(closeLoginModal).catch(error => {
-        console.error('Login Error:', error);
-        alert('Login failed. Please try again.');
-    });
-}
-
-function handleLogout() {
-    if (!window.firebaseAuth) return;
-    const { auth, signOut } = window.firebaseAuth;
-    signOut(auth).catch(error => console.error('Logout Error:', error));
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (window.firebaseAuth) {
-            const { auth, onAuthStateChanged } = window.firebaseAuth;
-            onAuthStateChanged(auth, user => {
-                const loggedOutDiv = document.getElementById('auth-logged-out');
-                const loggedInDiv = document.getElementById('auth-logged-in');
-                const nameSpan = document.getElementById('user-display-name');
-                if (user) {
-                    loggedOutDiv.classList.add('hidden');
-                    loggedInDiv.classList.remove('hidden');
-                    nameSpan.innerText = user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : 'Hi, User';
-                } else {
-                    loggedOutDiv.classList.remove('hidden');
-                    loggedInDiv.classList.add('hidden');
-                }
-            });
-        }
-    }, 500);
-
-    const dropZone = document.getElementById('modal-drop-zone');
-    if (dropZone) {
-        dropZone.addEventListener('click', () => document.getElementById('modalFileUpload').click());
-        dropZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            dropZone.classList.add('ring-2', 'ring-red-400');
-        });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('ring-2', 'ring-red-400'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropZone.classList.remove('ring-2', 'ring-red-400');
-            if (e.dataTransfer.files?.[0]) loadFile(e.dataTransfer.files[0]);
-        });
-    }
-});
-
-function handleModalFileSelect(e) {
-    if (e.target.files?.[0]) loadFile(e.target.files[0]);
-}
-
-function loadFile(file) {
-    if (currentToolName === 'Image Compressor' && !file.type.startsWith('image/')) {
-        alert('Please select an image file (JPG, PNG, WEBP, etc.).');
-        return;
-    }
-
-    selectedModalFile = file;
-    document.getElementById('modal-upload-prompt').classList.add('hidden');
-    document.getElementById('modal-file-info').classList.remove('hidden');
-    document.getElementById('modal-file-name').innerText = file.name;
-    document.getElementById('modal-file-size').innerText = formatBytes(file.size);
-    document.getElementById('modal-config').classList.remove('hidden');
-}
-
-function processFileAction() {
-    if (!selectedModalFile) {
-        alert('Please select a file first.');
-        return;
-    }
-
-    if (currentToolName === 'Image Compressor') {
-        processImageCompression(selectedModalFile);
-        return;
-    }
-
-    // Other tools are still placeholders until their conversion engines are implemented.
-    const btn = document.getElementById('modal-process-btn');
-    const progressWrap = document.getElementById('modal-progress-wrap');
-    const bar = document.getElementById('modal-progress-bar');
-    btn.disabled = true;
-    progressWrap.classList.remove('hidden');
-    let pct = 0;
-    const interval = setInterval(() => {
-        pct += 10;
-        bar.style.width = Math.min(pct, 100) + '%';
-        if (pct >= 100) {
-            clearInterval(interval);
-            btn.disabled = false;
-            progressWrap.classList.add('hidden');
-            document.getElementById('modal-success').classList.remove('hidden');
-        }
-    }, 50);
-}
+let currentCategory='all';
+let selectedModalFiles=[];
+let currentToolName='';
+const toolDescriptions={
+'Merge PDF':'Select two or more PDF files. They will be merged in selection order.','Split PDF':'Select one PDF. Every page will be downloaded as a separate PDF inside a ZIP.','Rotate PDF':'Select one PDF. Every page will be rotated 90° clockwise.','Compress PDF':'Select one PDF. The file is re-saved with PDF object streams enabled.','PDF to Word':'Select one PDF. Extracted text is exported to a .doc file that opens in Microsoft Word.','PDF to Text':'Select one PDF and extract all selectable text into a .txt file.','PDF to JPG':'Select one PDF and render every page as JPG files in a ZIP.','JPG to PDF':'Select one or more JPG/PNG/WebP images and combine them into one PDF.','Watermark PDF':'Select one PDF and add a text watermark to every page.','Sign PDF':'Select one PDF and add a typed signature to the first page.','Image Compressor':'Select one JPG, PNG or WebP image and compress it in your browser.','AI Document Summary':'Select a text-based PDF. Enter your Gemini API key below. The key is used only in your browser and is never committed to the repository.'};
+function filterByCategory(cat){currentCategory=cat;document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));document.querySelectorAll('.tool-card').forEach(c=>c.style.display=cat==='all'||c.dataset.cat===cat?'':'none');}
+function openToolModal(name){currentToolName=name;selectedModalFiles=[];document.getElementById('modal-title').textContent=name;document.getElementById('modal-description').textContent=toolDescriptions[name]||'Select a file to continue.';document.getElementById('tool-modal').classList.remove('hidden');document.getElementById('tool-modal').classList.add('flex');document.getElementById('modal-file-info').classList.add('hidden');document.getElementById('modal-config').classList.add('hidden');document.getElementById('modal-options').innerHTML='';document.getElementById('modal-success').classList.add('hidden');document.getElementById('modal-progress-wrap').classList.add('hidden');document.getElementById('modalFileUpload').value='';const input=document.getElementById('modalFileUpload');input.multiple=['Merge PDF','JPG to PDF'].includes(name);input.accept=name.includes('PDF')||name==='AI Document Summary'||name==='PDF to Word'||name==='PDF to Text'||name==='PDF to JPG'||name==='Watermark PDF'||name==='Sign PDF'||name==='Rotate PDF'||name==='Split PDF'||name==='Compress PDF'?'application/pdf':name==='Image Compressor'?'image/*':'image/*';if(name==='AI Document Summary')document.getElementById('modal-options').innerHTML='<label class="block text-sm font-bold mb-2">Gemini API key</label><input id="ai-key" type="password" placeholder="Paste your Gemini API key" class="w-full border rounded-xl p-3"><p class="text-xs text-slate-500 mt-2">For safety, this key is not stored in GitHub or sent anywhere except Google Gemini.</p>';if(name==='Watermark PDF')document.getElementById('modal-options').innerHTML='<input id="watermark-text" value="CONFIDENTIAL" class="w-full border rounded-xl p-3" placeholder="Watermark text">';if(name==='Sign PDF')document.getElementById('modal-options').innerHTML='<input id="signature-text" placeholder="Type your name/signature" class="w-full border rounded-xl p-3">';if(name==='Image Compressor')document.getElementById('modal-options').innerHTML='<label class="block font-bold">Quality <span id="quality-value">70%</span></label><input id="image-quality" type="range" min="10" max="95" value="70" class="w-full" oninput="document.getElementById(\'quality-value\').textContent=this.value+\'%\'">';}
+function closeToolModal(){document.getElementById('tool-modal').classList.add('hidden');document.getElementById('tool-modal').classList.remove('flex');selectedModalFiles=[];}
+function handleModalFileSelect(e){const files=[...e.target.files];if(files.length)loadFiles(files);}
+function loadFiles(files){if(currentToolName==='Merge PDF'&&files.some(f=>f.type!=='application/pdf'))return alert('Merge PDF accepts PDF files only.');if(currentToolName==='JPG to PDF'&&files.some(f=>!f.type.startsWith('image/')))return alert('JPG to PDF accepts images only.');if(currentToolName==='Image Compressor'&&(!files[0].type.startsWith('image/')||files.length>1))return alert('Select one image.');if(!currentToolName.includes('PDF')&&currentToolName!=='AI Document Summary'&&currentToolName!=='Merge PDF'&&currentToolName!=='Split PDF'&&currentToolName!=='Rotate PDF'&&currentToolName!=='Compress PDF'&&currentToolName!=='Watermark PDF'&&currentToolName!=='Sign PDF'&&currentToolName!=='PDF to Word'&&currentToolName!=='PDF to Text'&&currentToolName!=='PDF to JPG'){}selectedModalFiles=files;document.getElementById('modal-file-info').classList.remove('hidden');document.getElementById('modal-file-name').textContent=files.length===1?files[0].name:files.map(f=>f.name).join(', ');document.getElementById('modal-file-size').textContent=files.map(f=>formatBytes(f.size)).join(' • ');document.getElementById('modal-config').classList.remove('hidden');}
+function formatBytes(b){if(!b)return'0 Bytes';const u=['Bytes','KB','MB','GB'];const i=Math.min(Math.floor(Math.log(b)/Math.log(1024)),3);return`${(b/1024**i).toFixed(i?2:0)} ${u[i]}`;}
+function setProgress(v,msg){document.getElementById('modal-progress-wrap').classList.remove('hidden');document.getElementById('modal-progress-bar').style.width=v+'%';document.getElementById('modal-status').textContent=msg||'';}
+function done(msg='Completed successfully.'){document.getElementById('modal-progress-wrap').classList.add('hidden');document.getElementById('modal-config').classList.add('hidden');const s=document.getElementById('modal-success');s.classList.remove('hidden');s.innerHTML=`<div class="bg-emerald-50 text-emerald-700 p-4 rounded-xl font-bold">✅ ${msg}</div>`;}
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+async function processFileAction(){if(!selectedModalFiles.length)return alert('Please select a file first.');const b=document.getElementById('modal-process-btn');b.disabled=true;try{setProgress(15,'Reading file…');const f=selectedModalFiles;switch(currentToolName){case'Merge PDF':await mergePDFs(f);break;case'Split PDF':await splitPDF(f[0]);break;case'Rotate PDF':await rotatePDF(f[0]);break;case'Compress PDF':await compressPDF(f[0]);break;case'PDF to Text':await pdfToText(f[0],false);break;case'PDF to Word':await pdfToText(f[0],true);break;case'PDF to JPG':await pdfToJpg(f[0]);break;case'JPG to PDF':await imagesToPdf(f);break;case'Watermark PDF':await watermarkPDF(f[0]);break;case'Sign PDF':await signPDF(f[0]);break;case'Image Compressor':await compressImageTool(f[0]);break;case'AI Document Summary':await aiSummary(f[0]);break;default:throw new Error('Unknown tool');}}catch(e){console.error(e);alert(e.message||'Processing failed.');}finally{b.disabled=false;}}
+async function mergePDFs(files){const out=await PDFLib.PDFDocument.create();for(let i=0;i<files.length;i++){const src=await PDFLib.PDFDocument.load(await files[i].arrayBuffer());const pages=await out.copyPages(src,src.getPageIndices());pages.forEach(p=>out.addPage(p));setProgress(20+70*(i+1)/files.length,'Merging PDFs…');}downloadBlob(new Blob([await out.save()],{type:'application/pdf'}),'merged.pdf');done('PDFs merged and downloaded.');}
+async function splitPDF(file){const src=await PDFLib.PDFDocument.load(await file.arrayBuffer()),zip=new JSZip();for(let i=0;i<src.getPageCount();i++){const d=await PDFLib.PDFDocument.create();const[p]=await d.copyPages(src,[i]);d.addPage(p);zip.file(`page-${i+1}.pdf`,await d.save());setProgress(20+70*(i+1)/src.getPageCount(),'Creating pages…');}downloadBlob(await zip.generateAsync({type:'blob'}),'split-pages.zip');done('Split pages downloaded as a ZIP.');}
+async function rotatePDF(file){const src=await PDFLib.PDFDocument.load(await file.arrayBuffer());src.getPages().forEach(p=>p.setRotation(PDFLib.degrees((p.getRotation().angle+90)%360)));downloadBlob(new Blob([await src.save()],{type:'application/pdf'}),'rotated.pdf');done('Rotated PDF downloaded.');}
+async function compressPDF(file){const src=await PDFLib.PDFDocument.load(await file.arrayBuffer(),{updateMetadata:false,useObjectStreams:true});downloadBlob(new Blob([await src.save({useObjectStreams:true,addDefaultPage:false})],{type:'application/pdf'}),'compressed.pdf');done('Optimized PDF downloaded. Note: browser-only PDF compression has limits.');}
+async function pdfToText(file,word){const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),c=await page.getTextContent();text+=`\n--- Page ${i} ---\n`+c.items.map(x=>x.str).join(' ')+'\n';setProgress(20+70*i/pdf.numPages,'Extracting text…');}if(!text.trim())throw new Error('No selectable text was found. Scanned PDFs need OCR.');if(word){const html=`<html><body><pre style="font-family:Arial;white-space:pre-wrap">${escapeHtml(text)}</pre></body></html>`;downloadBlob(new Blob([html],{type:'application/msword'}),'document.doc');done('Word-readable DOC downloaded.');}else{downloadBlob(new Blob([text],{type:'text/plain'}),'document.txt');done('Text file downloaded.');}}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+async function pdfToJpg(file){const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,zip=new JSZip();for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i),v=p.getViewport({scale:1.5}),c=document.createElement('canvas');c.width=v.width;c.height=v.height;await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.88));zip.file(`page-${i}.jpg`,blob);setProgress(20+70*i/pdf.numPages,'Rendering pages…');}downloadBlob(await zip.generateAsync({type:'blob'}),'pdf-pages.zip');done('JPG pages downloaded as a ZIP.');}
+async function imagesToPdf(files){const out=await PDFLib.PDFDocument.create();for(let i=0;i<files.length;i++){const bytes=await files[i].arrayBuffer(),img=files[i].type==='image/png'?await out.embedPng(bytes):await out.embedJpg(bytes);const p=out.addPage([img.width,img.height]);p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});setProgress(20+70*(i+1)/files.length,'Building PDF…');}downloadBlob(new Blob([await out.save()],{type:'application/pdf'}),'images.pdf');done('Images converted to PDF.');}
+async function watermarkPDF(file){const src=await PDFLib.PDFDocument.load(await file.arrayBuffer()),font=await src.embedFont(PDFLib.StandardFonts.HelveticaBold),txt=document.getElementById('watermark-text').value||'CONFIDENTIAL';src.getPages().forEach(p=>{const{width,height}=p.getSize();p.drawText(txt,{x:width*.25,y:height*.5,size:30,font,color:PDFLib.rgb(.8,.1,.1),opacity:.35,rotate:PDFLib.degrees(35)});});downloadBlob(new Blob([await src.save()],{type:'application/pdf'}),'watermarked.pdf');done('Watermarked PDF downloaded.');}
+async function signPDF(file){const src=await PDFLib.PDFDocument.load(await file.arrayBuffer()),font=await src.embedFont(PDFLib.StandardFonts.HelveticaOblique),txt=document.getElementById('signature-text').value||'Signed';const p=src.getPages()[0];p.drawText(txt,{x:50,y:50,size:24,font,color:PDFLib.rgb(0,0,0)});downloadBlob(new Blob([await src.save()],{type:'application/pdf'}),'signed.pdf');done('Signed PDF downloaded.');}
+async function compressImageTool(file){const q=(+document.getElementById('image-quality').value||70)/100;await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const s=Math.min(1,2400/Math.max(im.width,im.height));c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);c.toBlob(blob=>{if(!blob)return reject(new Error('Compression failed.'));downloadBlob(blob,`${file.name.replace(/\.[^.]+$/,'')}-compressed.jpg`);done(`Compressed ${formatBytes(file.size)} → ${formatBytes(blob.size)}.`);resolve();},'image/jpeg',q)};im.onerror=()=>reject(new Error('Invalid image.'));im.src=e.target.result};r.onerror=()=>reject(new Error('Cannot read image.'));r.readAsDataURL(file);});}
+async function aiSummary(file){const key=document.getElementById('ai-key').value.trim();if(!key)throw new Error('Paste a Gemini API key first.');const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let i=1;i<=Math.min(pdf.numPages,30);i++){const c=await(await pdf.getPage(i)).getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';}if(!text.trim())throw new Error('No selectable text found. Scanned PDFs need OCR.');if(text.length>50000)text=text.slice(0,50000);setProgress(55,'Generating AI summary…');const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Summarize this document clearly. Give: 1) executive summary, 2) key points, 3) important facts/numbers, 4) action items if present.\n\nDOCUMENT:\n${text}`}]}]})});const data=await res.json();if(!res.ok)throw new Error(data.error?.message||'Gemini request failed.');const summary=data.candidates?.[0]?.content?.parts?.map(p=>p.text).join('\n')||'No summary returned.';document.getElementById('modal-success').classList.remove('hidden');document.getElementById('modal-success').innerHTML=`<div class="bg-slate-50 border rounded-2xl p-5 text-left"><h3 class="text-xl font-black mb-3">AI Summary</h3><div class="whitespace-pre-wrap text-slate-700">${escapeHtml(summary)}</div></div><button class="mt-4 bg-red-600 text-white px-5 py-3 rounded-xl font-bold" onclick="downloadBlob(new Blob([${JSON.stringify(summary)}],{type:'text/plain'}),'ai-summary.txt')">Download summary</button>`;document.getElementById('modal-config').classList.add('hidden');document.getElementById('modal-progress-wrap').classList.add('hidden');}
+function openLoginModal(){document.getElementById('login-modal').classList.remove('hidden');document.getElementById('login-modal').classList.add('flex');}function closeLoginModal(){document.getElementById('login-modal').classList.add('hidden');document.getElementById('login-modal').classList.remove('flex');}function loginWithGoogle(){if(!window.firebaseAuth)return;const{auth,signInWithPopup,GoogleAuthProvider}=window.firebaseAuth;signInWithPopup(auth,new GoogleAuthProvider()).then(closeLoginModal).catch(e=>alert('Login failed: '+e.message));}function handleLogout(){if(window.firebaseAuth)window.firebaseAuth.signOut(window.firebaseAuth.auth);}
+document.addEventListener('DOMContentLoaded',()=>{const z=document.getElementById('modal-drop-zone');z.addEventListener('click',()=>document.getElementById('modalFileUpload').click());z.addEventListener('dragover',e=>e.preventDefault());z.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)loadFiles([...e.dataTransfer.files]);});if(window.firebaseAuth)window.firebaseAuth.onAuthStateChanged(window.firebaseAuth.auth,u=>{document.getElementById('auth-logged-out').classList.toggle('hidden',!!u);document.getElementById('auth-logged-in').classList.toggle('hidden',!u);document.getElementById('auth-logged-in').classList.toggle('flex',!!u);if(u)document.getElementById('user-display-name').textContent='Hi, '+(u.displayName||'User').split(' ')[0];});});
