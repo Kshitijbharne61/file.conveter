@@ -1,4 +1,6 @@
 let currentCategory = 'all';
+let selectedModalFile = null;
+let currentToolName = '';
 
 function filterByCategory(cat) {
     currentCategory = cat;
@@ -13,6 +15,8 @@ function filterByCategory(cat) {
 }
 
 function openToolModal(toolName, type) {
+    currentToolName = toolName;
+    selectedModalFile = null;
     document.getElementById('modal-title').innerText = toolName;
     document.getElementById('tool-modal').classList.remove('hidden');
     document.getElementById('modal-config').classList.add('hidden');
@@ -20,13 +24,16 @@ function openToolModal(toolName, type) {
     document.getElementById('modal-progress-wrap').classList.add('hidden');
     document.getElementById('modal-upload-prompt').classList.remove('hidden');
     document.getElementById('modal-file-info').classList.add('hidden');
+    document.getElementById('modal-progress-bar').style.width = '0%';
+    document.getElementById('modal-process-btn').disabled = false;
+    document.getElementById('modalFileUpload').value = '';
 }
 
 function closeToolModal() {
     document.getElementById('tool-modal').classList.add('hidden');
+    selectedModalFile = null;
 }
 
-// Firebase Auth Handlers
 function openLoginModal() {
     document.getElementById('login-modal').classList.remove('hidden');
 }
@@ -39,35 +46,26 @@ function loginWithGoogle() {
     if (!window.firebaseAuth) return;
     const { auth, signInWithPopup, GoogleAuthProvider } = window.firebaseAuth;
     const provider = new GoogleAuthProvider();
-
-    signInWithPopup(auth, provider)
-        .then(() => {
-            closeLoginModal();
-        })
-        .catch((error) => {
-            console.error("Login Error:", error);
-            alert("Login failed. Please try again.");
-        });
+    signInWithPopup(auth, provider).then(closeLoginModal).catch(error => {
+        console.error('Login Error:', error);
+        alert('Login failed. Please try again.');
+    });
 }
 
 function handleLogout() {
     if (!window.firebaseAuth) return;
     const { auth, signOut } = window.firebaseAuth;
-    signOut(auth).catch((error) => {
-        console.error("Logout Error:", error);
-    });
+    signOut(auth).catch(error => console.error('Logout Error:', error));
 }
 
-// Track User Auth State
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (window.firebaseAuth) {
             const { auth, onAuthStateChanged } = window.firebaseAuth;
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, user => {
                 const loggedOutDiv = document.getElementById('auth-logged-out');
                 const loggedInDiv = document.getElementById('auth-logged-in');
                 const nameSpan = document.getElementById('user-display-name');
-
                 if (user) {
                     loggedOutDiv.classList.add('hidden');
                     loggedInDiv.classList.remove('hidden');
@@ -80,46 +78,66 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 500);
 
-    // Drop zone setup
     const dropZone = document.getElementById('modal-drop-zone');
     if (dropZone) {
-        dropZone.addEventListener('click', () => {
-            document.getElementById('modalFileUpload').click();
+        dropZone.addEventListener('click', () => document.getElementById('modalFileUpload').click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('ring-2', 'ring-red-400');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('ring-2', 'ring-red-400'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('ring-2', 'ring-red-400');
+            if (e.dataTransfer.files?.[0]) loadFile(e.dataTransfer.files[0]);
         });
     }
 });
 
 function handleModalFileSelect(e) {
-    if (e.target.files && e.target.files[0]) {
-        loadFile(e.target.files[0]);
-    }
+    if (e.target.files?.[0]) loadFile(e.target.files[0]);
 }
 
 function loadFile(file) {
+    if (currentToolName === 'Image Compressor' && !file.type.startsWith('image/')) {
+        alert('Please select an image file (JPG, PNG, WEBP, etc.).');
+        return;
+    }
+
+    selectedModalFile = file;
     document.getElementById('modal-upload-prompt').classList.add('hidden');
     document.getElementById('modal-file-info').classList.remove('hidden');
     document.getElementById('modal-file-name').innerText = file.name;
-    document.getElementById('modal-file-size').innerText = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    document.getElementById('modal-file-size').innerText = formatBytes(file.size);
     document.getElementById('modal-config').classList.remove('hidden');
 }
 
 function processFileAction() {
-    let btn = document.getElementById('modal-process-btn');
-    btn.disabled = true;
-    document.getElementById('modal-progress-wrap').classList.remove('hidden');
-    const bar = document.getElementById('modal-progress-bar');
-    let pct = 0;
+    if (!selectedModalFile) {
+        alert('Please select a file first.');
+        return;
+    }
 
+    if (currentToolName === 'Image Compressor') {
+        processImageCompression(selectedModalFile);
+        return;
+    }
+
+    // Other tools are still placeholders until their conversion engines are implemented.
+    const btn = document.getElementById('modal-process-btn');
+    const progressWrap = document.getElementById('modal-progress-wrap');
+    const bar = document.getElementById('modal-progress-bar');
+    btn.disabled = true;
+    progressWrap.classList.remove('hidden');
+    let pct = 0;
     const interval = setInterval(() => {
         pct += 10;
         bar.style.width = Math.min(pct, 100) + '%';
         if (pct >= 100) {
             clearInterval(interval);
-            setTimeout(() => {
-                btn.disabled = false;
-                document.getElementById('modal-config').classList.add('hidden');
-                document.getElementById('modal-success').classList.remove('hidden');
-            }, 300);
+            btn.disabled = false;
+            progressWrap.classList.add('hidden');
+            document.getElementById('modal-success').classList.remove('hidden');
         }
     }, 50);
 }
