@@ -28,4 +28,36 @@
 <script>
 (()=>{const fileInput=document.getElementById('file'),drop=document.getElementById('drop'),browse=document.getElementById('browse'),info=document.getElementById('info'),nameEl=document.getElementById('name'),sizeEl=document.getElementById('size'),quality=document.getElementById('quality'),qvalue=document.getElementById('qvalue'),compress=document.getElementById('compress'),status=document.getElementById('status'),result=document.getElementById('result'),resultText=document.getElementById('resultText');let file=null;const fmt=b=>b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(2)+' MB';function select(f){if(!f||!['image/jpeg','image/png','image/webp'].includes(f.type)){status.textContent='Please select a JPG, PNG, or WebP image.';return}file=f;nameEl.textContent=f.name;sizeEl.textContent='Original size: '+fmt(f.size);info.style.display='block';compress.disabled=false;status.textContent='';result.style.display='none'}browse.onclick=e=>{e.stopPropagation();fileInput.click()};drop.onclick=e=>{if(e.target!==browse)fileInput.click()};fileInput.onchange=()=>select(fileInput.files[0]);['dragenter','dragover'].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',e=>select(e.dataTransfer.files[0]));quality.oninput=()=>qvalue.textContent=quality.value+'%';compress.onclick=async()=>{if(!file)return;compress.disabled=true;status.textContent='Compressing image…';result.style.display='none';try{const url=URL.createObjectURL(file),img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('This image could not be read by your browser.'));i.src=url});const max=5000,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Your browser does not support compression.');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',Number(quality.value)/100));URL.revokeObjectURL(url);if(!blob)throw new Error('Compression failed.');const outputName=file.name.replace(/\.[^.]+$/,'')+'-compressed.jpg',downloadUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=downloadUrl;a.download=outputName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);const saved=Math.max(0,file.size-blob.size),pct=file.size?Math.round(saved/file.size*100):0;status.textContent='Download started.';resultText.textContent=fmt(file.size)+' → '+fmt(blob.size)+(pct>0?' • '+pct+'% smaller':' • Try a lower quality for a smaller file.');result.style.display='block'}catch(e){status.textContent=e.message||'Compression failed. Please try another image.'}finally{compress.disabled=false}}})();
 </script>
-</body></html>
+<footer style="margin-top:48px;background:#0f172a;color:#e2e8f0;border-top:4px solid #dc2626;font-family:inherit">
+  <div style="max-width:1120px;margin:0 auto;padding:44px 24px 28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:32px">
+    <div>
+      <a href="/index.html" style="color:#fff;text-decoration:none;font-size:28px;font-weight:900">⚡ file<span style="color:#ef4444">Convert</span></a>
+      <p style="margin:14px 0 0;line-height:1.7;color:#94a3b8">Simple, fast and free tools to convert, compress and work with your files online.</p>
+    </div>
+    <div>
+      <h3 style="margin:0 0 14px;color:#fff;font-size:15px">POPULAR TOOLS</h3>
+      <p style="margin:8px 0"><a href="/compress-image.html" style="color:#cbd5e1;text-decoration:none">Compress Image</a></p>
+      <p style="margin:8px 0"><a href="/pdf-to-word.html" style="color:#cbd5e1;text-decoration:none">PDF to Word</a></p>
+      <p style="margin:8px 0"><a href="/pdf-to-jpg.html" style="color:#cbd5e1;text-decoration:none">PDF to JPG</a></p>
+      <p style="margin:8px 0"><a href="/jpg-to-pdf.html" style="color:#cbd5e1;text-decoration:none">JPG to PDF</a></p>
+    </div>
+    <div>
+      <h3 style="margin:0 0 14px;color:#fff;font-size:15px">MORE TOOLS</h3>
+      <p style="margin:8px 0"><a href="/compress-pdf.html" style="color:#cbd5e1;text-decoration:none">Compress PDF</a></p>
+      <p style="margin:8px 0"><a href="/merge-pdf.html" style="color:#cbd5e1;text-decoration:none">Merge PDF</a></p>
+      <p style="margin:8px 0"><a href="/pdf-to-text.html" style="color:#cbd5e1;text-decoration:none">PDF to Text</a></p>
+      <p style="margin:8px 0"><a href="/ai-pdf-summarizer.html" style="color:#cbd5e1;text-decoration:none">AI PDF Summarizer</a></p>
+    </div>
+    <div>
+      <h3 style="margin:0 0 14px;color:#fff;font-size:15px">ABOUT FILECONVERT</h3>
+      <p style="margin:0;color:#94a3b8;line-height:1.7">Your files are processed with privacy in mind. Many tools work directly in your browser without uploading files to a server.</p>
+      <a href="/index.html#tools-container" style="display:inline-block;margin-top:14px;color:#fff;background:#dc2626;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:800">Explore all tools →</a>
+    </div>
+  </div>
+  <div style="border-top:1px solid #334155">
+    <div style="max-width:1120px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;color:#94a3b8;font-size:14px">
+      <span>© 2026 fileConvert. All rights reserved.</span>
+      <span>Free online file tools • Fast • Simple • Privacy-focused</span>
+    </div>
+  </div>
+</footer></body></html>
